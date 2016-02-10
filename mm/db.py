@@ -1,0 +1,30 @@
+import os
+import logging
+
+import sqlalchemy
+import sqlalchemy.pool
+
+import bm.config.db
+
+_LOGGER = logging.getLogger(__name__)
+
+# We've had have persistent issues with persistent connections in the pool. It 
+# ends-up preventing us from doing DB changes. For now, we disable it.
+_ENABLE_POOL = bool(int(os.environ.get('MODEL_USE_POOL', '1')))
+
+def _get_engine():
+    kwargs = {}
+    if _ENABLE_POOL is False:
+        _LOGGER.debug("Disabling DB connection-pool.")
+        kwargs['poolclass'] = sqlalchemy.pool.NullPool
+
+    engine = \
+        sqlalchemy.create_engine(
+            bm.config.db.DSN, 
+            pool_recycle=\
+                bm.config.db.CONNECTION_RECYCLE_FREQUENCY_S,
+            **kwargs)
+
+    return engine
+
+ENGINE = _get_engine()
