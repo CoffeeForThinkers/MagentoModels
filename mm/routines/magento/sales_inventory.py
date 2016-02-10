@@ -1,11 +1,11 @@
 import logging
 
-import bm.routines
+import mm.routines
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class SalesInventoryRoutines(bm.routines.RoutinesBase):
+class SalesInventoryRoutines(mm.routines.RoutinesBase):
     noun = 'sales_inventory'
 
     def get_sales_inventory_changes(self, start_timestamp, stop_timestamp):

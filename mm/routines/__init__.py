@@ -4,7 +4,7 @@ import re
 import sqlalchemy.orm
 import sqlalchemy.exc
 
-import bm.db
+import mm.db
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ _DB_ERROR_RX = r"\(OperationalError\) \([0-9]+, (['\"])(.+)\1\)"
 _DB_SESSION = \
     sqlalchemy.orm.scoped_session(
         sqlalchemy.orm.sessionmaker(
-            bind=bm.db.ENGINE))
+            bind=mm.db.ENGINE))
 
 
 class _BlobArgumentWrapper(object):
@@ -131,7 +131,7 @@ class RoutinesBase(object):
         (query, replacements) = self.__build_raw_query(routine, args)
 
         # Grab a raw connection from the connection-pool.
-        connection = bm.db.ENGINE.raw_connection()
+        connection = mm.db.ENGINE.raw_connection()
 
         sets = []
 

@@ -4,7 +4,7 @@ import logging
 import sqlalchemy
 import sqlalchemy.pool
 
-import bm.config.db
+import mm.config.db
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,9 +20,9 @@ def _get_engine():
 
     engine = \
         sqlalchemy.create_engine(
-            bm.config.db.DSN, 
+            mm.config.db.DSN, 
             pool_recycle=\
-                bm.config.db.CONNECTION_RECYCLE_FREQUENCY_S,
+                mm.config.db.CONNECTION_RECYCLE_FREQUENCY_S,
             **kwargs)
 
     return engine

@@ -1,11 +1,11 @@
 import logging
 
-import bm.routines
+import mm.routines
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class WebsiteRoutines(bm.routines.RoutinesBase):
+class WebsiteRoutines(mm.routines.RoutinesBase):
     noun = 'website'
 
     def get_default_website(self):
