@@ -11,7 +11,6 @@ class WebsiteRoutines(mm.routines.RoutinesBase):
     def get_default_website(self):
         record = \
             self.get_one_record(
-                'get_sales_inventory_changes',
-                start_timestamp, stop_timestamp)
+                'get_default_website')
         
         return record
