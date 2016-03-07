@@ -2,7 +2,7 @@
 Configuration
 -------------
 
-Set the `BM_DB_DSN` environment variable to a DSN for the database.
+Set the `MM_DB_DSN` environment variable to a DSN for the database.
 
 Example (for MySQL)::
 
