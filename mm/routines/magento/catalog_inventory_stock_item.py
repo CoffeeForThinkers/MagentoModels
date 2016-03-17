@@ -1,20 +1,13 @@
 import logging
 
 import mm.routines
+import mm.exceptions
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class CatalogInventoryStockItemRoutines(mm.routines.RoutinesBase):
     noun = 'catalog_inventory_stock_item'
-
-    def get_stock(self, sku=None):
-        record = \
-            self.call(
-                'get_stock',
-                sku)
-        
-        return record
 
     def update_stock(self, sku, stock, force_in_stock):
         record = \
@@ -24,10 +17,22 @@ class CatalogInventoryStockItemRoutines(mm.routines.RoutinesBase):
 
         return record
 
+    def get_all_stock(self):
+        rows = \
+            self.call(
+                'get_stock',
+                None)
+        
+        return rows
+
     def get_stock(self, sku):
-        record = \
-            self.get_one_record(
+        rows = \
+            self.call(
                 'get_stock',
                 sku)
 
-        return record
+        rows = list(rows)
+        if not rows:
+            raise mm.exceptions.NoRowsError()
+
+        return rows[0]

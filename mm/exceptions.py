@@ -1,0 +1,2 @@
+class NoRowsError(Exception):
+    pass
