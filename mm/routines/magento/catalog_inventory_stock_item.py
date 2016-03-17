@@ -15,3 +15,19 @@ class CatalogInventoryStockItemRoutines(mm.routines.RoutinesBase):
                 sku)
         
         return record
+
+    def update_stock(self, sku, stock, force_in_stock):
+        record = \
+            self.get_one_record(
+                'update_stock',
+                sku, stock, int(force_in_stock))
+
+        return record
+
+    def get_stock(self, sku):
+        record = \
+            self.get_one_record(
+                'get_stock',
+                sku)
+
+        return record
