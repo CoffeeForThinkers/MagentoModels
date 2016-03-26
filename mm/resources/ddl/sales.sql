@@ -40,6 +40,7 @@ BEGIN
 
 SELECT 
   sales.entity_id AS order_id,
+  sales.created_at,
   sales.increment_id AS order_number,
   sales.customer_id,
   sales_items.sku, 
@@ -77,6 +78,7 @@ BEGIN
 SELECT 
   sales.entity_id AS order_id,
   sales.increment_id AS order_number,
+  sales.created_at,
   sales.customer_id,
   sales_items.sku, 
   sales_items.product_id, 

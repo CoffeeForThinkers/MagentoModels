@@ -22,7 +22,7 @@ class SalesRoutines(mm.routines.RoutinesBase):
     def get_sales_with_start_order_id(self, start_order_id):
         records = \
             self.call(
-                'get_sales_with_items_with_start_order_id',
+                'get_sales_with_start_order_id',
                 start_order_id)
 
         for record in records:
