@@ -6,8 +6,8 @@ import mm.exceptions
 _LOGGER = logging.getLogger(__name__)
 
 
-class CatalogInventoryStockItemRoutines(mm.routines.RoutinesBase):
-    noun = 'catalog_inventory_stock_item'
+class InventoryRoutines(mm.routines.RoutinesBase):
+    noun = 'inventory'
 
     def update_stock(self, sku, stock, force_in_stock):
         record = \
