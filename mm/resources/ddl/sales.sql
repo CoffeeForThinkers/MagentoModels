@@ -29,17 +29,18 @@ END//
 
 delimiter ;
 
--- PROCEDURE: get_sales_with_items
+-- PROCEDURE: get_sales_with_times
 
-DROP PROCEDURE IF EXISTS `get_sales_with_items`;
+DROP PROCEDURE IF EXISTS `get_sales_with_times`;
 
 delimiter //
 
-CREATE PROCEDURE `get_sales_with_items`(IN `date_from` DATETIME, IN `date_to` DATETIME)
+CREATE PROCEDURE `get_sales_with_times`(IN `date_from` DATETIME, IN `date_to` DATETIME)
 BEGIN
 
 SELECT 
   sales.entity_id AS order_id,
+  sales.created_at,
   sales.increment_id AS order_number,
   sales.customer_id,
   sales_items.sku, 
@@ -65,18 +66,19 @@ END//
 
 delimiter ;
 
--- PROCEDURE: get_sales_with_items_with_start_order_id
+-- PROCEDURE: get_sales_with_start_order_id
 
-DROP PROCEDURE IF EXISTS `get_sales_with_items_with_start_order_id`;
+DROP PROCEDURE IF EXISTS `get_sales_with_start_order_id`;
 
 delimiter //
 
-CREATE PROCEDURE `get_sales_with_items_with_start_order_id`(IN `start_order_id` INT UNSIGNED)
+CREATE PROCEDURE `get_sales_with_start_order_id`(IN `start_order_id` INT UNSIGNED)
 BEGIN
 
 SELECT 
   sales.entity_id AS order_id,
   sales.increment_id AS order_number,
+  sales.created_at,
   sales.customer_id,
   sales_items.sku, 
   sales_items.product_id, 
