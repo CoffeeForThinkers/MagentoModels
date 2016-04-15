@@ -38,25 +38,25 @@ delimiter //
 CREATE PROCEDURE `get_sales_with_times`(IN `date_from` DATETIME, IN `date_to` DATETIME)
 BEGIN
 
-SELECT 
+SELECT
   sales.entity_id AS order_id,
   sales.created_at,
   sales.increment_id AS order_number,
   sales.customer_id,
-  sales_items.sku, 
-  sales_items.product_id, 
+  sales_items.sku,
+  sales_items.product_id,
   sales_items.qty_ordered AS quantity,
   COALESCE(att_style.value, '') AS style_code
 FROM sales_flat_order AS sales
  INNER JOIN sales_flat_order_item AS sales_items ON sales.entity_id = sales_items.order_id
- LEFT OUTER JOIN (SELECT item.entity_id AS product_id, 
+ LEFT OUTER JOIN (SELECT item.entity_id AS product_id,
                          item.value
-                   FROM catalog_product_entity_varchar AS item 
-                     INNER JOIN eav_attribute AS att ON item.attribute_id = att.attribute_id 
+                   FROM catalog_product_entity_varchar AS item
+                     INNER JOIN eav_attribute AS att ON item.attribute_id = att.attribute_id
                       WHERE att.attribute_code = 'style') AS att_style ON att_style.product_id = sales_items.product_id
-WHERE 
+WHERE
     sales.created_at >= date_from AND (date_to IS NULL OR sales.created_at < date_to) AND
-    sales_items.product_type = 'simple' AND 
+    sales_items.product_type = 'simple' AND
     sales.`status` NOT IN ('canceled', 'fraud', 'holded', 'paypal_canceled_reversal', 'paypal_reversed', 'pending_payment', 'pending_paypal')
 
 ORDER BY order_id
@@ -75,81 +75,31 @@ delimiter //
 CREATE PROCEDURE `get_sales_with_start_order_id`(IN `start_order_id` INT UNSIGNED)
 BEGIN
 
-SELECT 
+SELECT
   sales.entity_id AS order_id,
   sales.increment_id AS order_number,
   sales.created_at,
   sales.customer_id,
-  sales_items.sku, 
-  sales_items.product_id, 
+  sales_items.sku,
+  sales_items.product_id,
   sales_items.qty_ordered AS quantity,
   COALESCE(att_style.value, '') AS style_code
 FROM sales_flat_order AS sales
  INNER JOIN sales_flat_order_item AS sales_items ON sales.entity_id = sales_items.order_id
- LEFT OUTER JOIN (SELECT item.entity_id AS product_id, 
+ LEFT OUTER JOIN (SELECT item.entity_id AS product_id,
                          item.value
-                   FROM catalog_product_entity_varchar AS item 
-                     INNER JOIN eav_attribute AS att ON item.attribute_id = att.attribute_id 
+                   FROM catalog_product_entity_varchar AS item
+                     INNER JOIN eav_attribute AS att ON item.attribute_id = att.attribute_id
                       WHERE att.attribute_code = 'style') AS att_style ON att_style.product_id = sales_items.product_id
-WHERE 
+WHERE
     sales.entity_id >= start_order_id AND
-    sales_items.product_type = 'simple' AND 
+    sales_items.product_type = 'simple' AND
     sales.`status` NOT IN ('canceled', 'fraud', 'holded', 'paypal_canceled_reversal', 'paypal_reversed', 'pending_payment', 'pending_paypal')
 
 ORDER BY order_id
 ;
 
 END//
-
-delimiter ;
-
--- PROCEDURE: get_sales_with_times_and_customer_info
-
-DROP PROCEDURE IF EXISTS `get_sales_with_times_and_customer_info`;
-
-delimiter //
-
-CREATE PROCEDURE `get_sales_with_times_and_customer_info`(IN `date_from` DATETIME, IN `date_to` DATETIME)
-BEGIN
-
-SELECT 
-  sales.entity_id AS order_id,
-  sales.created_at,
-  sales.increment_id AS order_number,
-  sales.customer_id,
-  sales_items.sku, 
-  sales_items.product_id, 
-  sales_items.qty_ordered AS quantity,
-  sales_items.price,
-  COALESCE(att_style.value, '') AS style_code,
-  address.firstname,
-  COALESCE(address.middlename, '') AS middlename,
-  sales.shipping_description AS shipping_method,
-  address.lastname, 
-  address.street, 
-  address.city, 
-  address.region,
-  address.postcode,
-  address.country_id AS country,
-  COALESCE(address.email, '') AS email, 
-  address.telephone
-FROM sales_flat_order AS sales
- INNER JOIN sales_flat_order_address AS address  ON sales.entity_id = address.parent_id AND address.address_type = 'shipping'
- INNER JOIN sales_flat_order_item AS sales_items ON sales.entity_id = sales_items.order_id 
- LEFT OUTER JOIN (SELECT item.entity_id AS product_id, 
-                         item.value
-                   FROM catalog_product_entity_varchar AS item 
-                     INNER JOIN eav_attribute AS att ON item.attribute_id = att.attribute_id 
-                      WHERE att.attribute_code = 'style') AS att_style ON att_style.product_id = sales_items.product_id
-WHERE 
-    sales.created_at >= date_from AND (date_to IS NULL OR sales.created_at < date_to) AND
-    sales_items.product_type = 'simple' AND 
-    sales.`status` NOT IN ('canceled', 'fraud', 'holded', 'paypal_canceled_reversal', 'paypal_reversed', 'pending_payment', 'pending_paypal')
-
-ORDER BY order_id
-;
-
-END
 
 delimiter ;
 
@@ -160,43 +110,44 @@ DROP PROCEDURE IF EXISTS `get_sales_and_customer_info_with_times`;
 delimiter //
 
 CREATE PROCEDURE `get_sales_and_customer_info_with_times`(
-    IN `date_from` DATETIME, 
+    IN `date_from` DATETIME,
     IN `date_to` DATETIME
   )
 BEGIN
 
-SELECT 
+SELECT
   sales.entity_id AS order_id,
   sales.created_at,
   sales.increment_id AS order_number,
   sales.customer_id,
-  sales_items.sku, 
-  sales_items.product_id, 
+  sales_items.sku,
+  sales_items.product_id,
   sales_items.qty_ordered AS quantity,
-  sales_items.price,
+  COALESCE(sales_price.price, sales_items.price) AS price,
   COALESCE(att_style.value, '') AS style_code,
   address.firstname,
   COALESCE(address.middlename, '') AS middlename,
   sales.shipping_description AS shipping_method,
-  address.lastname, 
-  address.street, 
-  address.city, 
+  address.lastname,
+  address.street,
+  address.city,
   address.region,
   address.postcode,
   address.country_id AS country,
-  COALESCE(address.email, '') AS email, 
+  COALESCE(address.email, '') AS email,
   address.telephone
 FROM sales_flat_order AS sales
  INNER JOIN sales_flat_order_address AS address  ON sales.entity_id = address.parent_id AND address.address_type = 'shipping'
- INNER JOIN sales_flat_order_item AS sales_items ON sales.entity_id = sales_items.order_id 
- LEFT OUTER JOIN (SELECT item.entity_id AS product_id, 
+ INNER JOIN sales_flat_order_item AS sales_items ON sales.entity_id = sales_items.order_id
+ LEFT OUTER JOIN sales_flat_order_item AS sales_price ON sales_items.order_id = sales_price.order_id AND sales_price.sku = sales_items.sku AND  sales_price.product_type = 'configurable'
+ LEFT OUTER JOIN (SELECT item.entity_id AS product_id,
                          item.value
-                   FROM catalog_product_entity_varchar AS item 
-                     INNER JOIN eav_attribute AS att ON item.attribute_id = att.attribute_id 
+                   FROM catalog_product_entity_varchar AS item
+                     INNER JOIN eav_attribute AS att ON item.attribute_id = att.attribute_id
                       WHERE att.attribute_code = 'style') AS att_style ON att_style.product_id = sales_items.product_id
-WHERE 
+WHERE
     sales.created_at >= date_from AND (date_to IS NULL OR sales.created_at < date_to) AND
-    sales_items.product_type = 'simple' AND 
+    sales_items.product_type = 'simple' AND
     sales.`status` NOT IN ('canceled', 'fraud', 'holded', 'paypal_canceled_reversal', 'paypal_reversed', 'pending_payment', 'pending_paypal')
 
 ORDER BY order_id
@@ -217,38 +168,39 @@ CREATE PROCEDURE `get_sales_and_customer_info_with_start_order_id`(
 )
 BEGIN
 
-SELECT 
+SELECT
   sales.entity_id AS order_id,
   sales.created_at,
   sales.increment_id AS order_number,
   sales.customer_id,
-  sales_items.sku, 
-  sales_items.product_id, 
+  sales_items.sku,
+  sales_items.product_id,
   sales_items.qty_ordered AS quantity,
-  sales_items.price,
+  COALESCE(sales_price.price, sales_items.price) AS price,
   COALESCE(att_style.value, '') AS style_code,
   address.firstname,
   COALESCE(address.middlename, '') AS middlename,
   sales.shipping_description AS shipping_method,
-  address.lastname, 
-  address.street, 
-  address.city, 
+  address.lastname,
+  address.street,
+  address.city,
   address.region,
   address.postcode,
   address.country_id AS country,
-  COALESCE(address.email, '') AS email, 
+  COALESCE(address.email, '') AS email,
   address.telephone
 FROM sales_flat_order AS sales
  INNER JOIN sales_flat_order_address AS address  ON sales.entity_id = address.parent_id AND address.address_type = 'shipping'
  INNER JOIN sales_flat_order_item AS sales_items ON sales.entity_id = sales_items.order_id
- LEFT OUTER JOIN (SELECT item.entity_id AS product_id, 
+ LEFT OUTER JOIN sales_flat_order_item AS sales_price ON sales_items.order_id = sales_price.order_id AND sales_price.sku = sales_items.sku AND  sales_price.product_type = 'configurable'
+ LEFT OUTER JOIN (SELECT item.entity_id AS product_id,
                          item.value
-                   FROM catalog_product_entity_varchar AS item 
-                     INNER JOIN eav_attribute AS att ON item.attribute_id = att.attribute_id 
+                   FROM catalog_product_entity_varchar AS item
+                     INNER JOIN eav_attribute AS att ON item.attribute_id = att.attribute_id
                       WHERE att.attribute_code = 'style') AS att_style ON att_style.product_id = sales_items.product_id
-WHERE 
+WHERE
     sales.entity_id >= start_order_id AND
-    sales_items.product_type = 'simple' AND 
+    sales_items.product_type = 'simple' AND
     sales.`status` NOT IN ('canceled', 'fraud', 'holded', 'paypal_canceled_reversal', 'paypal_reversed', 'pending_payment', 'pending_paypal')
 ORDER BY order_id
 ;
