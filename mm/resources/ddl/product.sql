@@ -5,8 +5,8 @@ DROP PROCEDURE IF EXISTS `update_enum_product_attribute`;
 delimiter //
 
 CREATE PROCEDURE `update_enum_product_attribute`(
-    IN `sku` VARCHAR(64), 
-    IN `att_name` VARCHAR(255), 
+    IN `sku` VARCHAR(64),
+    IN `att_name` VARCHAR(255),
     IN `att_value` INT
 )
 BEGIN
@@ -14,12 +14,75 @@ BEGIN
 UPDATE catalog_product_entity_int AS attvalue
     INNER JOIN catalog_product_entity AS item   ON item.entity_id = attvalue.entity_id
     INNER JOIN eav_attribute AS att ON att.attribute_id = attvalue.attribute_id AND att.attribute_code = att_name
- SET 
+ SET
    value = att_value
 WHERE item.sku = sku;
 
   SELECT
     row_count() `affected`;
 END//
+
+delimiter ;
+
+-- PROCEDURE: get_configurable_associated_products
+
+DROP PROCEDURE IF EXISTS `get_configurable_associated_products`;
+
+delimiter //
+
+CREATE PROCEDURE `get_configurable_associated_products`(
+    IN `store_id` INT,
+    IN `is_active` TINYINT,
+    IN `is_visible` TINYINT
+)
+BEGIN
+
+# defaults for is_visible = NULL
+DECLARE visibility_min INT DEFAULT 1;
+DECLARE visibility_max INT DEFAULT 99;
+
+# Magento uses 1 - True, 2 - False for Active status
+IF is_active IS NOT NULL THEN
+     SET is_active = IF(is_active = 0, 2, 1);
+END IF;
+
+SET visibility_min = IF(is_visible > 0, 2, visibility_min);
+SET visibility_max = IF(is_visible = 0, 1, visibility_max);
+
+SELECT
+   S.link_id,
+   S.product_id,
+   S.parent_id,
+   P.attribute_set_id,
+   P.entity_type_id,
+   P.type_id,
+   P.sku,
+   CCEV.value  AS name,
+   CCEI1.value AS active,
+   CCEI2.value AS visibility
+FROM catalog_product_super_link S
+ INNER JOIN catalog_product_entity P ON S.product_id = P.entity_id
+ INNER JOIN eav_entity_type     EAVT ON P.entity_type_id = EAVT.entity_type_id
+ INNER JOIN (SELECT CEV.entity_id, CEV.value, CEV.store_id
+              FROM catalog_product_entity_varchar CEV
+                INNER JOIN eav_attribute AS EAV ON CEV.attribute_id = EAV.attribute_id AND
+                                                   EAV.attribute_code = 'name' AND
+                                                   (CEV.store_id = store_id OR store_id IS NULL)) AS CCEV ON P.entity_id = CCEV.entity_id
+ INNER JOIN (SELECT CEI.entity_id, CEI.value, CEI.store_id
+              FROM catalog_product_entity_int CEI
+                INNER JOIN eav_attribute AS EAV ON CEI.attribute_id = EAV.attribute_id AND
+                                                   EAV.attribute_code IN ('status') AND
+                                                   (CEI.store_id = store_id OR store_id IS NULL)) AS CCEI1 ON P.entity_id = CCEI1.entity_id
+ INNER JOIN (SELECT CEI.entity_id, CEI.value, CEI.store_id
+              FROM catalog_product_entity_int CEI
+                INNER JOIN eav_attribute AS EAV ON CEI.attribute_id = EAV.attribute_id AND
+                                                   EAV.attribute_code IN ('visibility') AND
+                                                   (CEI.store_id = store_id OR store_id IS NULL)) AS CCEI2 ON P.entity_id = CCEI2.entity_id
+WHERE EAVT.entity_type_code = 'catalog_product' AND
+      (CCEI1.value = is_active OR is_active IS NULL) AND
+      (CCEI2.value BETWEEN visibility_min AND visibility_max)
+;
+
+END
 
 delimiter ;

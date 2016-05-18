@@ -15,3 +15,13 @@ class ProductRoutines(mm.routines.RoutinesBase):
                 sku, att_name, att_value)
 
         return record
+
+    def get_configurable_associated_products(self, store_id=None, is_active=None, is_visible=None):
+        rows = \
+            self.call(
+                'get_configurable_associated_products',
+                store_id,
+                int(is_active) if isinstance(is_active, bool) else None,
+                int(is_visible) if isinstance(is_visible, bool) else None)
+
+        return rows
