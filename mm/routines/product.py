@@ -31,7 +31,7 @@ class ProductRoutines(mm.routines.RoutinesBase):
             self.call(
                 'get_configurable_associated_products',
                 store_id,
-                int(is_active),
-                int(is_visible))
+                is_active,
+                is_visible)
 
         return rows
