@@ -17,7 +17,6 @@ class ProductRoutines(mm.routines.RoutinesBase):
         return record
 
     def get_configurable_associated_products(self, store_id=None, is_active=None, is_visible=None):
-        legal_inputs = set([None, True, False])
         message = "Not a valid input value for '{0}'. Use: {1}"
 
         assert type(store_id) is int or store_id is None, \
