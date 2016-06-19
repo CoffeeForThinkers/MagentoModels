@@ -16,6 +16,22 @@ class ProductRoutines(mm.routines.RoutinesBase):
 
         return record
 
+    def upsert_product_int_attribute(self, sku, att_name, att_value, store_id=0):
+        record = \
+            self.get_one_record(
+                'upsert_product_int_attribute',
+                sku, att_name, att_value, store_id)
+
+        return record
+
+    def upsert_product_varchar_attribute(self, sku, att_name, att_value, store_id=0):
+        record = \
+            self.get_one_record(
+                'upsert_product_varchar_attribute',
+                sku, att_name, att_value, store_id)
+
+        return record
+
     def get_configurable_associated_products(self, store_id=None, is_active=None, is_visible=None):
         message = "Not a valid input value for '{0}'. Use: {1}"
 

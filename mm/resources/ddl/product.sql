@@ -83,6 +83,105 @@ WHERE EAVT.entity_type_code = 'catalog_product' AND
       (CCEI2.value BETWEEN visibility_min AND visibility_max)
 ;
 
-END
+END//
 
 delimiter ;
+
+-- PROCEDURE: upsert_product_int_attribute
+
+DROP PROCEDURE IF EXISTS `upsert_product_int_attribute`;
+
+delimiter //
+
+CREATE PROCEDURE `upsert_product_int_attribute`(
+    IN `sku` VARCHAR(64),
+    IN `att_name` VARCHAR(255),
+    IN `att_value` INT,
+    IN `store_id` INT
+
+)
+BEGIN
+
+DECLARE att_id  INT;
+DECLARE prod_id  INT;
+DECLARE entity_type_id INT;
+
+SELECT I.attribute_id, P.entity_id, P.entity_type_id INTO att_id, prod_id, entity_type_id
+ FROM catalog_product_entity_int I
+   INNER JOIN eav_attribute A ON I.attribute_id = A.attribute_id
+   INNER JOIN catalog_product_entity P ON I.entity_id = P.entity_id
+WHERE P.sku = sku AND
+      A.attribute_code = att_name AND
+      I.store_id = store_id
+LIMIT 1;
+
+IF (att_id IS NOT NULL) THEN
+    UPDATE catalog_product_entity_int I
+    SET I.value = att_value
+    WHERE I.entity_id = prod_id AND
+          I.attribute_id = att_id;
+ELSE
+   SELECT A.attribute_id INTO att_id FROM eav_attribute A WHERE A.attribute_code = att_name;
+
+   IF (att_id IS NOT NULL) THEN
+       INSERT INTO catalog_product_entity_int
+        (entity_type_id, attribute_id, store_id, entity_id, value)
+        SELECT P.entity_type_id, att_id, store_id, P.entity_id, att_value
+          FROM catalog_product_entity P
+        WHERE P.sku = sku;
+    END IF;
+END IF;
+
+SELECT
+   row_count() 'affected';
+
+END//
+
+-- PROCEDURE: upsert_product_varchar_attribute
+
+DROP PROCEDURE IF EXISTS `upsert_product_varchar_attribute`;
+
+delimiter //
+
+CREATE PROCEDURE `upsert_product_varchar_attribute`(
+    IN `sku` VARCHAR(64),
+    IN `att_name` VARCHAR(255),
+    IN `att_value` VARCHAR(255),
+    IN `store_id` INT
+)
+BEGIN
+
+DECLARE att_id  INT;
+DECLARE prod_id  INT;
+DECLARE entity_type_id INT;
+
+SELECT V.attribute_id, P.entity_id, P.entity_type_id INTO  att_id, prod_id, entity_type_id
+ FROM catalog_product_entity_varchar V
+   INNER JOIN eav_attribute A ON V.attribute_id = A.attribute_id
+   INNER JOIN catalog_product_entity P ON V.entity_id = P.entity_id
+WHERE P.sku = sku AND
+      A.attribute_code = att_name AND
+      V.store_id = store_id
+LIMIT 1;
+
+IF (att_id IS NOT NULL) THEN
+    UPDATE catalog_product_entity_varchar V
+    SET V.value = att_value
+    WHERE V.entity_id = prod_id AND
+          V.attribute_id = att_id;
+ELSE
+   SELECT A.attribute_id INTO att_id FROM  eav_attribute A WHERE A.attribute_code = att_name;
+
+   IF (att_id IS NOT NULL) THEN
+       INSERT INTO catalog_product_entity_varchar
+        (entity_type_id, attribute_id, store_id, entity_id, value)
+        SELECT P.entity_type_id, att_id, store_id, P.entity_id, att_value
+          FROM catalog_product_entity P
+        WHERE P.sku = sku;
+    END IF;
+END IF;
+
+SELECT
+   row_count() 'affected';
+
+END//
