@@ -50,3 +50,15 @@ class ProductRoutines(mm.routines.RoutinesBase):
                 is_visible)
 
         return rows
+
+    def get_configurable_associated_products_stock(self, store_id=None):
+
+        assert type(store_id) is int or store_id is None, \
+            "Not a valid input value for 'store_id'. Use: 'None or int'"
+
+        rows = \
+            self.call(
+                'get_configurable_associated_products_stock',
+                store_id)
+
+        return rows
