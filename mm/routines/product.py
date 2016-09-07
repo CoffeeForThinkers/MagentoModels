@@ -14,6 +14,8 @@ class ProductRoutines(mm.routines.RoutinesBase):
                 'update_enum_product_attribute',
                 sku, att_name, att_value)
 
+        record['affected'] = int(record['affected'])
+
         return record
 
     def upsert_product_int_attribute(self, sku, att_name, att_value, store_id=0):
