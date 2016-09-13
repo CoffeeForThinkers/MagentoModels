@@ -87,6 +87,86 @@ END//
 
 delimiter ;
 
+-- PROCEDURE: get_configurable_associated_products_stock
+
+DROP PROCEDURE IF EXISTS `get_configurable_associated_products_stock`;
+
+delimiter //
+
+CREATE PROCEDURE `get_configurable_associated_products_stock`(
+    IN `store_id` INT
+)
+BEGIN
+
+SELECT
+   S.link_id,
+   S.product_id,
+   S.parent_id,
+   P.attribute_set_id,
+   P.entity_type_id,
+   P.type_id,
+   PC.sku      AS parent_sku,
+   P.sku,
+   CCEV.value  AS name,
+   CCEI1.value AS active,
+   CCEI2.value AS parent_visibility,
+   CCEP.value  AS primary_sku,
+   CCEO.value  AS sort_item,
+   CCES.value  AS style,
+   CCEI3.value AS color_id,
+   INV.qty,
+   INV.is_in_stock
+FROM catalog_product_super_link S
+ INNER JOIN catalog_product_entity P ON S.product_id = P.entity_id
+ INNER JOIN catalog_product_entity PC ON S.parent_id = PC.entity_id
+ INNER JOIN eav_entity_type EAVT ON P.entity_type_id = EAVT.entity_type_id
+ INNER JOIN cataloginventory_stock_item INV ON S.product_id = INV.product_id
+ INNER JOIN (SELECT CEV.entity_id, CEV.value, CEV.store_id
+                 FROM catalog_product_entity_varchar CEV
+                    INNER JOIN eav_attribute AS EAV ON CEV.attribute_id = EAV.attribute_id AND
+                                                        EAV.attribute_code = 'name' AND
+                                                                    (CEV.store_id = store_id OR store_id IS NULL)) AS CCEV ON P.entity_id = CCEV.entity_id
+ INNER JOIN (SELECT CEV.entity_id, CEV.value, CEV.store_id
+                 FROM catalog_product_entity_varchar CEV
+                    INNER JOIN eav_attribute AS EAV ON CEV.attribute_id = EAV.attribute_id AND
+                                                        EAV.attribute_code = 'primary_sku' AND
+                                                                    (CEV.store_id = store_id OR store_id IS NULL)) AS CCEP ON S.parent_id = CCEP.entity_id
+ INNER JOIN (SELECT CEV.entity_id, CEV.value, CEV.store_id, CP.sku
+              FROM catalog_product_entity_varchar CEV
+                INNER JOIN catalog_product_entity CP ON CEV.entity_id = CP.entity_id
+                INNER JOIN eav_attribute AS EAV ON CEV.attribute_id = EAV.attribute_id AND
+                                                   EAV.attribute_code = 'sort_item' AND
+                                                   (CEV.store_id = store_id OR store_id IS NULL)) AS CCEO ON CCEO.sku = CCEP.value
+ INNER JOIN (SELECT CEV.entity_id, CEV.value, CEV.store_id
+                 FROM catalog_product_entity_varchar CEV
+                    INNER JOIN eav_attribute AS EAV ON CEV.attribute_id = EAV.attribute_id AND
+                                                        EAV.attribute_code = 'style' AND
+                                                                    (CEV.store_id = store_id OR store_id IS NULL)) AS CCES ON S.parent_id = CCES.entity_id
+ INNER JOIN (SELECT CEI.entity_id, CEI.value, CEI.store_id
+              FROM catalog_product_entity_int CEI
+                INNER JOIN eav_attribute AS EAV ON CEI.attribute_id = EAV.attribute_id AND
+                                                        EAV.attribute_code IN ('status') AND
+                                                                    (CEI.store_id = store_id OR store_id IS NULL)) AS CCEI1 ON P.entity_id = CCEI1.entity_id
+ INNER JOIN (SELECT CEI.entity_id, CEI.value, CEI.store_id
+              FROM catalog_product_entity_int CEI
+                INNER JOIN eav_attribute AS EAV ON CEI.attribute_id = EAV.attribute_id AND
+                                                        EAV.attribute_code IN ('visibility') AND
+                                                                    (CEI.store_id = store_id OR store_id IS NULL)) AS CCEI2 ON S.parent_id  = CCEI2.entity_id
+ INNER JOIN (SELECT CEI.entity_id, CEI.value, CEI.store_id
+              FROM catalog_product_entity_int CEI
+                INNER JOIN eav_attribute AS EAV ON CEI.attribute_id = EAV.attribute_id AND
+                                                        EAV.attribute_code IN ('color') AND
+                                                                    (CEI.store_id = store_id OR store_id IS NULL)) AS CCEI3 ON P.entity_id = CCEI3.entity_id
+WHERE EAVT.entity_type_code = 'catalog_product' AND
+      (CCEI1.value = 1) AND (CCEI2.value = 4)
+ORDER BY S.parent_id, CCEI3.value, INV.is_in_stock DESC, INV.qty DESC
+;
+
+
+END//
+
+delimiter ;
+
 -- PROCEDURE: upsert_product_int_attribute
 
 DROP PROCEDURE IF EXISTS `upsert_product_int_attribute`;
