@@ -111,6 +111,7 @@ SELECT
    CCEI1.value AS active,
    CCEI2.value AS parent_visibility,
    CCEP.value  AS primary_sku,
+   CCEO.value  AS sort_item,
    CCES.value  AS style,
    CCEI3.value AS color_id,
    INV.qty,
@@ -130,6 +131,12 @@ FROM catalog_product_super_link S
                     INNER JOIN eav_attribute AS EAV ON CEV.attribute_id = EAV.attribute_id AND
                                                         EAV.attribute_code = 'primary_sku' AND
                                                                     (CEV.store_id = store_id OR store_id IS NULL)) AS CCEP ON S.parent_id = CCEP.entity_id
+ INNER JOIN (SELECT CEV.entity_id, CEV.value, CEV.store_id, CP.sku
+              FROM catalog_product_entity_varchar CEV
+                INNER JOIN catalog_product_entity CP ON CEV.entity_id = CP.entity_id
+                INNER JOIN eav_attribute AS EAV ON CEV.attribute_id = EAV.attribute_id AND
+                                                   EAV.attribute_code = 'sort_item' AND
+                                                   (CEV.store_id = store_id OR store_id IS NULL)) AS CCEO ON CCEO.sku = CCEP.value
  INNER JOIN (SELECT CEV.entity_id, CEV.value, CEV.store_id
                  FROM catalog_product_entity_varchar CEV
                     INNER JOIN eav_attribute AS EAV ON CEV.attribute_id = EAV.attribute_id AND
@@ -154,6 +161,7 @@ WHERE EAVT.entity_type_code = 'catalog_product' AND
       (CCEI1.value = 1) AND (CCEI2.value = 4)
 ORDER BY S.parent_id, CCEI3.value, INV.is_in_stock DESC, INV.qty DESC
 ;
+
 
 END//
 
