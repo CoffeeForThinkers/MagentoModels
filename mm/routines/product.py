@@ -64,3 +64,13 @@ class ProductRoutines(mm.routines.RoutinesBase):
                 store_id)
 
         return rows
+
+    def upsert_product_price(self, sku, currency_code, price, special_price, store_id=0):
+        record = \
+            self.get_one_record(
+                'upsert_product_price',
+                sku, store_id, currency_code, price, special_price)
+
+        record['affected'] = int(record['affected'])
+
+        return record
