@@ -16,3 +16,13 @@ class CategoryRoutines(mm.routines.RoutinesBase):
                 store_id)
 
         return rows
+
+    def upsert_category_int_attribute(self, category_id, att_name, att_value, store_id=0):
+        record = \
+            self.get_one_record(
+                'upsert_category_int_attribute',
+                category_id, att_name, att_value, store_id)
+
+        record['affected'] = int(record['affected'])
+
+        return record
