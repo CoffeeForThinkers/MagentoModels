@@ -265,3 +265,38 @@ SELECT
    row_count() 'affected';
 
 END//
+
+-- PROCEDURE: upsert_product_price
+
+DROP PROCEDURE IF EXISTS `upsert_product_price`;
+
+delimiter //
+
+CREATE PROCEDURE `upsert_product_price`(
+    IN `sku` VARCHAR(300),
+    IN `store_id` INT,
+    IN `currency_code` VARCHAR(3),
+    IN `price` DECIMAL(10,2),
+    IN `special_price` DECIMAL(10,2)
+)
+BEGIN
+
+IF EXISTS(SELECT 1 FROM catalog_price_list P
+          WHERE P.sku = sku AND P.store_id = store_id AND P.currency_code = currency_code) THEN
+BEGIN
+    UPDATE catalog_price_list p
+    SET p.price = price,
+        p.special_price = special_price
+    WHERE p.sku = sku AND p.store_id = store_id AND p.currency_code = UPPER(currency_code);
+END;
+ELSE
+BEGIN
+    INSERT INTO catalog_price_list (sku, store_id, currency_code, price, special_price)
+    VALUES (sku, store_id, UPPER(currency_code), price, special_price);
+END;
+END IF;
+
+ SELECT
+    row_count() `affected`;
+
+END//
