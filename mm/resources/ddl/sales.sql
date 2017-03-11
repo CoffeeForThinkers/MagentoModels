@@ -115,19 +115,60 @@ CREATE PROCEDURE `get_sales_and_customer_info_with_times`(
   )
 BEGIN
 
+DECLARE tz VARCHAR(50) DEFAULT NULL;
+
+
+SELECT value INTO tz FROM core_config_data WHERE path = 'general/locale/timezone' AND scope = 'default' LIMIT 1;
+IF tz IS NULL THEN
+    SET tz = 'GMT';
+END IF;
+
+# Temporary table to aggregate items per order.
+# Unsure why Magento creates multiple entries per sku per order
+DROP TEMPORARY TABLE IF EXISTS tmpOrders;
+CREATE TEMPORARY TABLE tmpOrders AS
+(
+    SELECT
+      sales.entity_id         AS order_id,
+      sales_items.product_id  AS product_id,
+      MIN(sales_items.sku)    AS sku,
+      MAX(COALESCE(sales_price.price, sales_items.price)) AS price,
+      SUM(sales_items.qty_ordered) AS quantity,
+      MIN(sales.increment_id) AS order_number,
+      MIN(sales.customer_id)  AS customer_id,
+      MIN(sales.shipping_description) AS shipping_method,
+      MIN(CONVERT_TZ(sales.created_at, 'GMT', tz)) AS created_at
+    FROM sales_flat_order AS sales
+     INNER JOIN sales_flat_order_item AS sales_items ON sales.entity_id = sales_items.order_id AND  sales_items.product_type = 'simple'
+     LEFT OUTER JOIN (SELECT
+         sales_price.order_id,
+         sales_price.sku,
+         MAX(sales_price.price) AS price
+       FROM sales_flat_order_item  AS sales_price
+         WHERE sales_price.product_type = 'configurable'
+       GROUP BY sales_price.order_id, sales_price.sku) AS sales_price ON sales_items.order_id = sales_price.order_id AND sales_price.sku = sales_items.sku
+    WHERE
+        sales.created_at >= date_from AND (date_to IS NULL OR sales.created_at < date_to) AND
+        sales_items.product_type = 'simple' AND
+        sales.`status` NOT IN ('canceled', 'fraud', 'holded', 'paypal_canceled_reversal', 'paypal_reversed', 'pending_payment', 'pending_paypal')
+    GROUP BY sales.entity_id, sales_items.product_id
+    ORDER BY sales.entity_id, sales_items.product_id
+);
+
+
 SELECT
-  sales.entity_id AS order_id,
+  sales.order_id,
   sales.created_at,
-  sales.increment_id AS order_number,
+  sales.order_number,
   sales.customer_id,
-  sales_items.sku,
-  sales_items.product_id,
-  sales_items.qty_ordered AS quantity,
-  COALESCE(sales_price.price, sales_items.price) AS price,
+  sales.sku,
+  sales.product_id,
+  sales.quantity,
+  sales.price,
   COALESCE(att_style.value, '') AS style_code,
   address.firstname,
   COALESCE(address.middlename, '') AS middlename,
-  sales.shipping_description AS shipping_method,
+  sales.shipping_method,
   address.lastname,
   address.street,
   address.city,
@@ -136,20 +177,13 @@ SELECT
   address.country_id AS country,
   COALESCE(address.email, '') AS email,
   address.telephone
-FROM sales_flat_order AS sales
- INNER JOIN sales_flat_order_address AS address  ON sales.entity_id = address.parent_id AND address.address_type = 'shipping'
- INNER JOIN sales_flat_order_item AS sales_items ON sales.entity_id = sales_items.order_id
- LEFT OUTER JOIN sales_flat_order_item AS sales_price ON sales_items.order_id = sales_price.order_id AND sales_price.sku = sales_items.sku AND  sales_price.product_type = 'configurable'
+FROM tmpOrders AS sales
+ INNER JOIN sales_flat_order_address AS address  ON sales.order_id = address.parent_id AND address.address_type = 'shipping'
  LEFT OUTER JOIN (SELECT item.entity_id AS product_id,
                          item.value
                    FROM catalog_product_entity_varchar AS item
                      INNER JOIN eav_attribute AS att ON item.attribute_id = att.attribute_id
-                      WHERE att.attribute_code = 'style') AS att_style ON att_style.product_id = sales_items.product_id
-WHERE
-    sales.created_at >= date_from AND (date_to IS NULL OR sales.created_at < date_to) AND
-    sales_items.product_type = 'simple' AND
-    sales.`status` NOT IN ('canceled', 'fraud', 'holded', 'paypal_canceled_reversal', 'paypal_reversed', 'pending_payment', 'pending_paypal')
-
+                      WHERE att.attribute_code = 'style') AS att_style ON att_style.product_id = sales.product_id
 ORDER BY order_id
 ;
 
@@ -168,19 +202,60 @@ CREATE PROCEDURE `get_sales_and_customer_info_with_start_order_id`(
 )
 BEGIN
 
+DECLARE tz VARCHAR(50) DEFAULT NULL;
+
+
+SELECT value INTO tz FROM core_config_data WHERE path = 'general/locale/timezone' AND scope = 'default' LIMIT 1;
+IF tz IS NULL THEN
+    SET tz = 'GMT';
+END IF;
+
+# Temporary table to aggregate items per order.
+# Unsure why Magento creates multiple entries per sku per order
+DROP TEMPORARY TABLE IF EXISTS tmpOrders;
+CREATE TEMPORARY TABLE tmpOrders AS
+(
+    SELECT
+      sales.entity_id         AS order_id,
+      sales_items.product_id  AS product_id,
+      MIN(sales_items.sku)    AS sku,
+      MAX(COALESCE(sales_price.price, sales_items.price)) AS price,
+      SUM(sales_items.qty_ordered) AS quantity,
+      MIN(sales.increment_id) AS order_number,
+      MIN(sales.customer_id)  AS customer_id,
+      MIN(sales.shipping_description) AS shipping_method,
+      MIN(CONVERT_TZ(sales.created_at, 'GMT', tz)) AS created_at
+    FROM sales_flat_order AS sales
+     INNER JOIN sales_flat_order_item AS sales_items ON sales.entity_id = sales_items.order_id AND  sales_items.product_type = 'simple'
+     LEFT OUTER JOIN (SELECT
+         sales_price.order_id,
+         sales_price.sku,
+         MAX(sales_price.price) AS price
+       FROM sales_flat_order_item  AS sales_price
+         WHERE sales_price.product_type = 'configurable'
+       GROUP BY sales_price.order_id, sales_price.sku) AS sales_price ON sales_items.order_id = sales_price.order_id AND sales_price.sku = sales_items.sku
+    WHERE
+        sales.entity_id >= start_order_id AND
+        sales_items.product_type = 'simple' AND
+        sales.`status` NOT IN ('canceled', 'fraud', 'holded', 'paypal_canceled_reversal', 'paypal_reversed', 'pending_payment', 'pending_paypal')
+    GROUP BY sales.entity_id, sales_items.product_id
+    ORDER BY sales.entity_id, sales_items.product_id
+);
+
+
 SELECT
-  sales.entity_id AS order_id,
+  sales.order_id,
   sales.created_at,
-  sales.increment_id AS order_number,
+  sales.order_number,
   sales.customer_id,
-  sales_items.sku,
-  sales_items.product_id,
-  sales_items.qty_ordered AS quantity,
-  COALESCE(sales_price.price, sales_items.price) AS price,
+  sales.sku,
+  sales.product_id,
+  sales.quantity,
+  sales.price,
   COALESCE(att_style.value, '') AS style_code,
   address.firstname,
   COALESCE(address.middlename, '') AS middlename,
-  sales.shipping_description AS shipping_method,
+  sales.shipping_method,
   address.lastname,
   address.street,
   address.city,
@@ -189,19 +264,13 @@ SELECT
   address.country_id AS country,
   COALESCE(address.email, '') AS email,
   address.telephone
-FROM sales_flat_order AS sales
- INNER JOIN sales_flat_order_address AS address  ON sales.entity_id = address.parent_id AND address.address_type = 'shipping'
- INNER JOIN sales_flat_order_item AS sales_items ON sales.entity_id = sales_items.order_id
- LEFT OUTER JOIN sales_flat_order_item AS sales_price ON sales_items.order_id = sales_price.order_id AND sales_price.sku = sales_items.sku AND  sales_price.product_type = 'configurable'
+FROM tmpOrders AS sales
+ INNER JOIN sales_flat_order_address AS address  ON sales.order_id = address.parent_id AND address.address_type = 'shipping'
  LEFT OUTER JOIN (SELECT item.entity_id AS product_id,
                          item.value
                    FROM catalog_product_entity_varchar AS item
                      INNER JOIN eav_attribute AS att ON item.attribute_id = att.attribute_id
-                      WHERE att.attribute_code = 'style') AS att_style ON att_style.product_id = sales_items.product_id
-WHERE
-    sales.entity_id >= start_order_id AND
-    sales_items.product_type = 'simple' AND
-    sales.`status` NOT IN ('canceled', 'fraud', 'holded', 'paypal_canceled_reversal', 'paypal_reversed', 'pending_payment', 'pending_paypal')
+                      WHERE att.attribute_code = 'style') AS att_style ON att_style.product_id = sales.product_id
 ORDER BY order_id
 ;
 
