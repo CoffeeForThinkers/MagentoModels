@@ -65,6 +65,21 @@ class ProductRoutines(mm.routines.RoutinesBase):
 
         return rows
 
+    def get_product_listing_with_attributes(self, product_type=None, store_id=None):
+
+        assert type(product_type) is str or product_type is None, \
+            "Not a valid input value for 'product_type'. Use: 'None or string'"
+        assert type(store_id) is int or store_id is None, \
+            "Not a valid input value for 'store_id'. Use: 'None or int'"
+
+        rows = \
+            self.call(
+                'get_product_listing_with_attributes',
+                product_type,
+                store_id)
+
+        return rows
+
     def upsert_product_price(self, sku, currency_code, price, special_price, store_id=0):
         record = \
             self.get_one_record(

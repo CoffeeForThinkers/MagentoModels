@@ -300,3 +300,60 @@ END IF;
     row_count() `affected`;
 
 END//
+
+-- PROCEDURE: get_product_listing_with_attributes
+
+DROP PROCEDURE IF EXISTS `get_product_listing_with_attributes`;
+
+delimiter //
+
+CREATE PROCEDURE `get_product_listing_with_attributes`(
+	IN `product_type` VARCHAR(50),
+    IN `store_id` INT
+)
+BEGIN
+
+SELECT
+   P.entity_id AS product_id,
+   P.attribute_set_id,
+   P.entity_type_id,
+   P.type_id,
+   P.sku,
+   CCEV.value  AS name,
+   CCEI1.value AS active,
+   CCEI2.value AS visibility,
+   CCEO.value  AS sort_item,
+   CCES.value  AS style
+FROM catalog_product_entity P
+ INNER JOIN eav_entity_type EAVT ON P.entity_type_id = EAVT.entity_type_id
+ INNER JOIN (SELECT CEV.entity_id, CEV.value, CEV.store_id
+			     FROM catalog_product_entity_varchar CEV
+    			    INNER JOIN eav_attribute AS EAV ON CEV.attribute_id = EAV.attribute_id AND
+					                                    EAV.attribute_code = 'name' AND
+																	(CEV.store_id = store_id OR store_id IS NULL)) AS CCEV ON P.entity_id = CCEV.entity_id
+ INNER JOIN (SELECT CEV.entity_id, CEV.value, CEV.store_id, CP.sku
+              FROM catalog_product_entity_varchar CEV
+                INNER JOIN catalog_product_entity CP ON CEV.entity_id = CP.entity_id
+                INNER JOIN eav_attribute AS EAV ON CEV.attribute_id = EAV.attribute_id AND
+                                                   EAV.attribute_code = 'sort_item' AND
+                                                   (CEV.store_id = store_id OR store_id IS NULL)) AS CCEO ON P.sku = CCEO.sku
+ INNER JOIN (SELECT CEV.entity_id, CEV.value, CEV.store_id
+			     FROM catalog_product_entity_varchar CEV
+    			    INNER JOIN eav_attribute AS EAV ON CEV.attribute_id = EAV.attribute_id AND
+					                                    EAV.attribute_code = 'style' AND
+																	(CEV.store_id = store_id OR store_id IS NULL)) AS CCES ON P.entity_id = CCES.entity_id
+ INNER JOIN (SELECT CEI.entity_id, CEI.value, CEI.store_id
+              FROM catalog_product_entity_int CEI
+                INNER JOIN eav_attribute AS EAV ON CEI.attribute_id = EAV.attribute_id AND
+					                                    EAV.attribute_code IN ('status') AND
+																	(CEI.store_id = store_id OR store_id IS NULL)) AS CCEI1 ON P.entity_id = CCEI1.entity_id
+ INNER JOIN (SELECT CEI.entity_id, CEI.value, CEI.store_id
+              FROM catalog_product_entity_int CEI
+                INNER JOIN eav_attribute AS EAV ON CEI.attribute_id = EAV.attribute_id AND
+					                                    EAV.attribute_code IN ('visibility') AND
+																	(CEI.store_id = store_id OR store_id IS NULL)) AS CCEI2 ON P.entity_id = CCEI2.entity_id
+WHERE EAVT.entity_type_code = 'catalog_product' AND
+      (P.type_id = product_type OR product_type IS NULL)
+;
+
+END//
