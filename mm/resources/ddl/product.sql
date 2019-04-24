@@ -1,3 +1,34 @@
+-- PROCEDURE: catalog_association
+
+DROP PROCEDURE IF EXISTS `catalog_association`;
+
+delimiter //
+
+CREATE PROCEDURE `catalog_association`(
+	IN `vproduct_id` INT,
+	IN `vlink_product_id` INT,
+	IN `vlink_type_id` SMALLINT,
+	IN `vcleanup` TINYINT
+)
+BEGIN
+
+IF vcleanup > 0 THEN
+     DELETE FROM catalog_product_link
+     WHERE product_id = vproduct_id AND link_type_id = vlink_type_id;
+END IF;
+
+ INSERT IGNORE INTO catalog_product_link
+   (product_id, linked_product_id, link_type_id)
+ VALUES
+   (vproduct_id, vlink_product_id, vlink_type_id);
+
+SELECT
+    row_count() `affected`;
+
+END//
+
+delimiter ;
+
 -- PROCEDURE: update_enum_product_attribute
 
 DROP PROCEDURE IF EXISTS `update_enum_product_attribute`;

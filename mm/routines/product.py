@@ -89,3 +89,13 @@ class ProductRoutines(mm.routines.RoutinesBase):
         record['affected'] = int(record['affected'])
 
         return record
+
+    def catalog_association(self, product_id, linked_product_id, link_type, is_cleanup = False):
+        record = \
+            self.get_one_record(
+                'catalog_association',
+                product_id, linked_product_id, link_type, 1 if is_cleanup else 0)
+
+        record['affected'] = int(record['affected'])
+
+        return record
